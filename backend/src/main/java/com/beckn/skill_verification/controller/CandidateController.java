@@ -82,9 +82,21 @@ public class CandidateController {
             connection.setConnectTimeout(3000);
             connection.setReadTimeout(3000);
             int responseCode = connection.getResponseCode();
-            System.out.println("Credly response code: " + responseCode);
             
             if (responseCode >= 200 && responseCode < 400) {
+                java.io.BufferedReader in = new java.io.BufferedReader(new java.io.InputStreamReader(connection.getInputStream()));
+                String inputLine;
+                StringBuilder content = new StringBuilder();
+                while ((inputLine = in.readLine()) != null) {
+                    content.append(inputLine);
+                }
+                in.close();
+                connection.disconnect();
+                
+                String html = content.toString();
+                if (html.contains("Unable to verify badge") || html.contains("error-view__title")) {
+                    return ResponseEntity.ok().body(java.util.Collections.singletonMap("valid", false));
+                }
                 return ResponseEntity.ok().body(java.util.Collections.singletonMap("valid", true));
             } else {
                 return ResponseEntity.ok().body(java.util.Collections.singletonMap("valid", false));
