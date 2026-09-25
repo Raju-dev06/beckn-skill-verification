@@ -148,7 +148,7 @@ public class VerificationService {
         VerificationHistory history = verificationHistoryRepository.findAll().stream().filter(h -> transactionId.equals(h.getTransactionId())).findFirst().orElseThrow();
         
         int educationScore = 20; // Simulated auxiliary score
-        int totalScore = score + educationScore;
+        int totalScore = Math.min(score + educationScore, 100);
         
         String competency = "Beginner";
         if (totalScore >= 90) competency = "Advanced";

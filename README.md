@@ -42,6 +42,27 @@ graph TD
     end
 ```
 
+## Beckn Protocol Workflow (Verification Sequence)
+
+```mermaid
+sequenceDiagram
+    participant Candidate as Candidate
+    participant Backend as Core Backend
+    participant Beckn as Beckn Network Node
+
+    Candidate->>Backend: Request Skill Verification
+    Backend->>Backend: Generate Beckn Transaction ID
+    Backend->>Beckn: Search (Find verifiable sources)
+    Beckn-->>Backend: on_search (Providers found)
+    Backend->>Beckn: Select (Choose Verification Provider)
+    Beckn-->>Backend: on_select (Quotation/Requirements)
+    Backend->>Beckn: Init (Consent and init verification)
+    Beckn-->>Backend: on_init (Processing)
+    Backend->>Beckn: Confirm (Finalize execution)
+    Beckn-->>Backend: on_confirm (Status: VERIFIED + Trust Score)
+    Backend->>Candidate: Return Verified Status
+```
+
 ## Database Schema (ERD)
 
 ```mermaid
