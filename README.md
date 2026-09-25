@@ -42,6 +42,90 @@ graph TD
     end
 ```
 
+## Database Schema (ERD)
+
+```mermaid
+erDiagram
+    USER ||--o| CANDIDATE_PROFILE : "owns"
+    USER ||--o{ CANDIDATE_SKILL : "acquires"
+    USER ||--o{ CREDENTIAL : "uploads"
+    USER ||--o{ CONSENT : "gives"
+    USER ||--o{ VERIFICATION_RECORD : "receives"
+    USER ||--o{ VERIFICATION_HISTORY : "tracks"
+    
+    SKILL ||--o{ CANDIDATE_SKILL : "defined by"
+    SKILL ||--o{ CREDENTIAL : "associated with"
+    SKILL ||--o{ CONSENT : "has consent for"
+    SKILL ||--o{ VERIFICATION_RECORD : "recorded for"
+    SKILL ||--o{ VERIFICATION_HISTORY : "tracked for"
+
+    USER {
+        Long id PK
+        String name
+        String email
+        String password
+        String role "CANDIDATE | EMPLOYER"
+    }
+
+    CANDIDATE_PROFILE {
+        Long id PK
+        Long userId FK
+        String phone
+        String education
+        String college
+        Integer graduationYear
+    }
+
+    SKILL {
+        Long id PK
+        String name "e.g., Java, AWS"
+        String category "e.g., Cloud, Frontend"
+    }
+
+    CANDIDATE_SKILL {
+        Long id PK
+        Long candidateId FK
+        Long skillId FK
+        String competencyLevel "Beginner | Advanced"
+        String verificationStatus "VERIFIED | NOT VERIFIED"
+        Integer confidenceScore "0-100%"
+    }
+
+    CREDENTIAL {
+        Long id PK
+        Long candidateId FK
+        Long skillId FK
+        String certificateName
+        String credentialId
+        String status
+    }
+
+    CONSENT {
+        Long id PK
+        Long candidateId FK
+        Long skillId FK
+        Boolean consentGiven
+        LocalDateTime consentTimestamp
+    }
+
+    VERIFICATION_RECORD {
+        Long id PK
+        Long candidateId FK
+        Long skillId FK
+        String finalStatus
+        Integer confidenceScore
+        LocalDateTime verifiedAt
+    }
+
+    BECKN_TRANSACTION {
+        Long id PK
+        String transactionId "UUID"
+        String action "search | init | confirm"
+        String requestPayload "JSON"
+        String status "SENT | ACK"
+    }
+```
+
 ## Technology Stack
 - **Backend:** Java 17, Spring Boot (Web, Data JPA), MySQL
 - **Frontend:** React, Vite, Tailwind CSS, React Router, Axios
