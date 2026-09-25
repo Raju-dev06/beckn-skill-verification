@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, ExternalLink, Trash2, ShieldCheck, CheckCircle, AlertTriangle, Link } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { verificationService } from '../services/api';
+import { verificationService, candidateService } from '../services/api';
 
 const UUID_RE = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/;
 const STORAGE_KEY = 'badge_lookup_history_v1';
@@ -55,11 +55,25 @@ export default function BadgeVerify({ user }) {
     }
 
     const url = `https://www.credly.com/badges/${id}`;
-    setResult({ type: 'ok', id, url, msg: 'Badge ID found successfully!' });
-
-    const hash = await sha256(id);
-    const newList = [{ hash, url, time: Date.now() }, ...history].slice(0, 20);
-    saveHistory(newList);
+    
+    setIsSyncing(true);
+    try {
+      const response = await candidateService.verifyExternalBadge(id);
+      setIsSyncing(false);
+      
+      if (response.data && response.data.valid) {
+        setResult({ type: 'ok', id, url, msg: 'Badge successfully verified over the network!' });
+        
+        const hash = await sha256(id);
+        const newList = [{ hash, url, time: Date.now() }, ...history].slice(0, 20);
+        saveHistory(newList);
+      } else {
+        setResult({ type: 'err', msg: 'The badge ID was structurally valid, but it does not exist on Credly or has been revoked.' });
+      }
+    } catch (e) {
+      setIsSyncing(false);
+      setResult({ type: 'err', msg: 'Failed to connect to verification server.' });
+    }
   };
 
   const clearHistory = () => {

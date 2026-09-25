@@ -71,4 +71,28 @@ public class CandidateController {
         Optional<Credential> cred = credentialRepository.findByCandidateIdAndSkillId(candidateId, skillId);
         return cred.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
+
+    @GetMapping("/verify-external-badge")
+    public ResponseEntity<?> verifyExternalBadge(@RequestParam String id) {
+        System.out.println("Verifying external badge: " + id);
+        try {
+            java.net.HttpURLConnection connection = (java.net.HttpURLConnection) new java.net.URL("https://www.credly.com/badges/" + id).openConnection();
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0");
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(3000);
+            connection.setReadTimeout(3000);
+            int responseCode = connection.getResponseCode();
+            System.out.println("Credly response code: " + responseCode);
+            
+            if (responseCode >= 200 && responseCode < 400) {
+                return ResponseEntity.ok().body(java.util.Collections.singletonMap("valid", true));
+            } else {
+                return ResponseEntity.ok().body(java.util.Collections.singletonMap("valid", false));
+            }
+        } catch (Exception e) {
+            System.out.println("Error verifying badge: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.ok().body(java.util.Collections.singletonMap("valid", false));
+        }
+    }
 }
