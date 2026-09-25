@@ -7,16 +7,39 @@ This project is a working MVP prototype for a Beckn-Based Skill Verification Net
 
 ```mermaid
 graph TD
-    A[Candidate] -->|Upload Credential & Consent| B(Platform Frontend)
-    B -->|REST API| C(Spring Boot Backend)
-    C -->|Mock Beckn Protocol| D{Verification Engine}
-    D -->|Verify| E[MockONESTCredentialProvider]
-    D -->|Verify| F[MockCertificationProvider]
-    D -->|Verify| G[MockAssessmentProvider]
-    D --> H[Competency Mapping]
-    H --> I[(MySQL Database)]
-    J[Employer] -->|Search & View| B
-    B -->|Fetch Verified Profile| C
+    subgraph Frontend Application
+        UI[React.js + Tailwind CSS UI]
+        API_Layer[Axios API Interceptors]
+        UI --> API_Layer
+    end
+    
+    subgraph Spring Boot Backend Core
+        Controllers[Auth & Feature Controllers]
+        Services[Business Logic Services]
+        DB[(MySQL Database)]
+        
+        Controllers --> Services
+        Services --> DB
+    end
+    
+    API_Layer -->|REST over HTTP| Controllers
+    
+    subgraph Beckn Integration Layer
+        Beckn_Controller[Beckn BAP/BPP Controller]
+        Beckn_Service[Protocol Simulation Service]
+        Services <--> Beckn_Service
+        Beckn_Controller --> Beckn_Service
+    end
+    
+    subgraph External Networks
+        ONEST[ONEST / ONDC Network]
+        Credly[Credly Badge API]
+        Hiring_Platforms[LinkedIn / Naukri / Indeed]
+        
+        Beckn_Service <-->|JSON Payloads| ONEST
+        ONEST -.-> Credly
+        ONEST -.-> Hiring_Platforms
+    end
 ```
 
 ## Technology Stack
@@ -50,7 +73,7 @@ npm run dev
 The frontend runs on `http://localhost:5173`.
 
 ## Demo Credentials
-- **Candidate:** `candidate@test.com` / `password`
+- **Candidate:** Sign up to create a custom dynamic profile! (Demo candidate removed for realistic testing).
 - **Employer:** `employer@test.com` / `password`
 
 ## Prototype Limitations
