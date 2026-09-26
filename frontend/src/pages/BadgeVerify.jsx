@@ -84,6 +84,14 @@ export default function BadgeVerify({ user }) {
     if (!skillId || !user) return;
     setIsSyncing(true);
     try {
+      // Save the credential ID to the database first
+      const formData = new FormData();
+      formData.append('skillId', skillId);
+      formData.append('certificateName', 'Credly Badge');
+      formData.append('credentialId', badgeId);
+      formData.append('issuer', 'Credly');
+      await candidateService.addCredential(user.id, formData);
+
       // Simulate providing consent and verifying the specific badge on Beckn
       await verificationService.giveConsent(user.id, skillId);
       await verificationService.verifySkill(user.id, skillId);
