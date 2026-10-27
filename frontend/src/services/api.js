@@ -26,7 +26,11 @@ export const candidateService = {
   }),
   getCredentials: (id) => api.get(`/candidates/${id}/credentials`),
   getCredentialForSkill: (id, skillId) => api.get(`/candidates/${id}/credentials/${skillId}`),
-  verifyExternalBadge: (id) => api.get(`/candidates/verify-external-badge?id=${id}`)
+  verifyExternalBadge: (id) => api.get(`/candidates/verify-external-badge?id=${id}`),
+  verifyResumeFile: (formData) => api.post('/candidates/verify-resume', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  verifyResumeText: (text) => api.post('/candidates/verify-resume-text', { text })
 };
 
 export const verificationService = {

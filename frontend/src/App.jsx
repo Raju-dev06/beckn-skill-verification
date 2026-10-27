@@ -10,6 +10,7 @@ const VerificationProcess = lazy(() => import('./pages/VerificationProcess'));
 const VerificationResult = lazy(() => import('./pages/VerificationResult'));
 const EmployerProfileView = lazy(() => import('./pages/EmployerProfileView'));
 const BadgeVerify = lazy(() => import('./pages/BadgeVerify'));
+const ResumeVerifier = lazy(() => import('./pages/ResumeVerifier'));
 
 function App() {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')));
@@ -33,11 +34,13 @@ function App() {
             <Route path="/" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to={user.role === 'CANDIDATE' ? '/candidate/dashboard' : '/employer/dashboard'} />} />
             <Route path="/verify-badge" element={<BadgeVerify user={user} />} />
             <Route path="/verify-badge/:skillId" element={<BadgeVerify user={user} />} />
+            <Route path="/verify-resume" element={<ResumeVerifier user={user} />} />
             
             {/* Candidate Routes */}
             {user?.role === 'CANDIDATE' && (
               <>
                 <Route path="/candidate/dashboard" element={<CandidateDashboard user={user} />} />
+                <Route path="/candidate/verify-resume" element={<ResumeVerifier user={user} />} />
                 <Route path="/candidate/credential/add/:skillId" element={<AddCredential user={user} />} />
                 <Route path="/candidate/verification/:skillId" element={<VerificationProcess user={user} />} />
                 <Route path="/candidate/result/:skillId" element={<VerificationResult user={user} />} />

@@ -77,11 +77,17 @@ export default function CandidateDashboard({ user }) {
         </div>
       </div>
 
-      <div className="flex justify-between items-end mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
         <div>
           <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">Your Skills</h2>
           <p className="text-gray-500 mt-1">Manage and verify your professional competencies.</p>
         </div>
+        <button
+          onClick={() => navigate('/candidate/verify-resume')}
+          className="bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center gap-2 self-start sm:self-auto"
+        >
+          <Sparkles size={18} /> Auto-Verify via Resume
+        </button>
       </div>
 
       {/* Skills Grid */}

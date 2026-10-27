@@ -23,6 +23,7 @@ public class CandidateController {
     
     private final CandidateService candidateService;
     private final CredentialRepository credentialRepository;
+    private final com.beckn.skill_verification.service.ResumeVerificationService resumeVerificationService;
     
     @GetMapping("/{id}")
     public ResponseEntity<CandidateProfileDto> getProfile(@PathVariable Long id) {
@@ -107,4 +108,30 @@ public class CandidateController {
             return ResponseEntity.ok().body(java.util.Collections.singletonMap("valid", false));
         }
     }
+
+    @PostMapping("/verify-resume")
+    public ResponseEntity<?> verifyResumeFile(@RequestParam("file") MultipartFile file) {
+        try {
+            var response = resumeVerificationService.verifyResumeFile(file);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.out.println("Error processing resume: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(java.util.Collections.singletonMap("error", "Failed to process resume: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/verify-resume-text")
+    public ResponseEntity<?> verifyResumeText(@RequestBody java.util.Map<String, String> request) {
+        try {
+            String text = request.getOrDefault("text", "");
+            var response = resumeVerificationService.verifyResumeText(text);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.out.println("Error processing resume text: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(java.util.Collections.singletonMap("error", "Failed to process text: " + e.getMessage()));
+        }
+    }
 }
+

@@ -1,5 +1,5 @@
 import React from 'react';
-import { LogOut, ShieldCheck } from 'lucide-react';
+import { LogOut, ShieldCheck, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Navbar({ user, onLogout }) {
@@ -32,6 +32,13 @@ export default function Navbar({ user, onLogout }) {
         
         <div className="h-8 w-px bg-gray-300 hidden sm:block"></div>
         
+        <button 
+          onClick={() => navigate('/verify-resume')} 
+          className="flex items-center gap-2 text-primary-700 bg-primary-50 hover:bg-primary-100 font-semibold transition-colors px-3 py-2 rounded-lg border border-primary-200 shadow-sm"
+        >
+          <FileText size={18} /> <span className="hidden sm:inline">Resume Verifier</span>
+        </button>
+
         <button 
           onClick={() => navigate('/verify-badge')} 
           className="flex items-center gap-2 text-gray-600 hover:text-primary-600 font-medium transition-colors px-3 py-2 rounded-md hover:bg-primary-50"
