@@ -1,18 +1,26 @@
 package com.beckn.skill_verification.controller;
 
 import com.beckn.skill_verification.dto.CandidateProfileDto;
+import com.beckn.skill_verification.entity.CandidateSkill;
+import com.beckn.skill_verification.entity.Consent;
 import com.beckn.skill_verification.entity.Credential;
+import com.beckn.skill_verification.entity.Skill;
+import com.beckn.skill_verification.entity.VerificationRecord;
+import com.beckn.skill_verification.repository.CandidateSkillRepository;
+import com.beckn.skill_verification.repository.ConsentRepository;
 import com.beckn.skill_verification.repository.CredentialRepository;
+import com.beckn.skill_verification.repository.SkillRepository;
+import com.beckn.skill_verification.repository.VerificationRecordRepository;
 import com.beckn.skill_verification.service.CandidateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,6 +31,10 @@ public class CandidateController {
     
     private final CandidateService candidateService;
     private final CredentialRepository credentialRepository;
+    private final CandidateSkillRepository candidateSkillRepository;
+    private final VerificationRecordRepository verificationRecordRepository;
+    private final ConsentRepository consentRepository;
+    private final SkillRepository skillRepository;
     private final com.beckn.skill_verification.service.ResumeVerificationService resumeVerificationService;
     private final com.beckn.skill_verification.service.QrCertificateVerificationService qrCertificateVerificationService;
     
@@ -34,21 +46,57 @@ public class CandidateController {
     @PostMapping("/{id}/credentials")
     public ResponseEntity<Credential> addCredential(
             @PathVariable Long id,
-            @RequestParam("skillId") Long skillId,
+            @RequestParam(value = "skillId", required = false) Long skillId,
             @RequestParam("certificateName") String certificateName,
             @RequestParam("credentialId") String credentialId,
             @RequestParam("issuer") String issuer,
+            @RequestParam(value = "status", required = false) String status,
             @RequestParam(value = "file", required = false) MultipartFile file) throws IOException {
         
-        Credential credential = credentialRepository.findByCandidateIdAndSkillId(id, skillId)
-                .orElse(new Credential());
+        Credential credential = null;
+        
+        // 1. Look up by credential ID first to prevent duplicate re-uploads of same certificate
+        if (credentialId != null && !credentialId.isBlank()) {
+            credential = credentialRepository.findByCandidateIdAndCredentialId(id, credentialId).orElse(null);
+        }
+        
+        // 2. If not found and skillId is specified, check by candidateId and skillId
+        if (credential == null && skillId != null) {
+            credential = credentialRepository.findByCandidateIdAndSkillId(id, skillId).orElse(null);
+        }
+        
+        // 3. Otherwise create a new credential entry so multiple certificates are preserved
+        if (credential == null) {
+            credential = new Credential();
+        }
+        
+        // Fallback / auto-match skillId if not provided
+        if (skillId == null || skillId <= 0) {
+            List<CandidateSkill> candidateSkills = candidateSkillRepository.findByCandidateId(id);
+            if (!candidateSkills.isEmpty()) {
+                // Try matching by certificate name keyword
+                Long matchedSkillId = null;
+                for (CandidateSkill cs : candidateSkills) {
+                    Skill s = skillRepository.findById(cs.getSkillId()).orElse(null);
+                    if (s != null && certificateName != null && certificateName.toLowerCase().contains(s.getName().toLowerCase())) {
+                        matchedSkillId = s.getId();
+                        break;
+                    }
+                }
+                skillId = (matchedSkillId != null) ? matchedSkillId : candidateSkills.get(0).getSkillId();
+            } else {
+                skillId = 1L;
+            }
+        }
         
         credential.setCandidateId(id);
         credential.setSkillId(skillId);
         credential.setCertificateName(certificateName);
         credential.setCredentialId(credentialId);
         credential.setIssuer(issuer);
-        credential.setStatus("UPLOADED");
+        
+        String finalStatus = (status != null && !status.isBlank()) ? status : "UPLOADED";
+        credential.setStatus(finalStatus);
         
         if (file != null && !file.isEmpty()) {
             String rawFilename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "credential.pdf";
@@ -76,12 +124,51 @@ public class CandidateController {
             credential.setFilePath("uploads/" + safeFileName);
         }
         
-        return ResponseEntity.ok(credentialRepository.save(credential));
+        Credential savedCred = credentialRepository.save(credential);
+        
+        // If certificate is verified (e.g. from Credly badge, QR scan, or verified resume link),
+        // synchronize consent and verification record immediately to ensure authentic status across network
+        if ("VERIFIED".equalsIgnoreCase(finalStatus)) {
+            // Record consent
+            Consent consent = consentRepository.findByCandidateIdAndSkillId(id, skillId)
+                    .orElse(new Consent());
+            consent.setCandidateId(id);
+            consent.setSkillId(skillId);
+            consent.setConsentGiven(true);
+            consentRepository.save(consent);
+            
+            // Create or update Verification Record
+            VerificationRecord vr = verificationRecordRepository.findByCandidateIdAndSkillId(id, skillId);
+            if (vr == null) {
+                vr = new VerificationRecord();
+                vr.setCandidateId(id);
+                vr.setSkillId(skillId);
+            }
+            vr.setFinalStatus("VERIFIED");
+            vr.setCredentialStatus("VERIFIED");
+            vr.setEducationStatus("VERIFIED");
+            vr.setAssessmentStatus("VERIFIED");
+            vr.setConfidenceScore(95); // Strictly capped < 100%
+            vr.setCompetencyLevel("Advanced");
+            vr.setVerifiedAt(LocalDateTime.now());
+            verificationRecordRepository.save(vr);
+            
+            // Update CandidateSkill
+            CandidateSkill cs = candidateSkillRepository.findByCandidateIdAndSkillId(id, skillId).orElse(null);
+            if (cs != null) {
+                cs.setVerificationStatus("VERIFIED");
+                cs.setConfidenceScore(95);
+                cs.setCompetencyLevel("Advanced");
+                candidateSkillRepository.save(cs);
+            }
+        }
+        
+        return ResponseEntity.ok(savedCred);
     }
 
     @GetMapping("/{id}/credentials")
     public ResponseEntity<List<Credential>> getCredentials(@PathVariable Long id) {
-        return ResponseEntity.ok(credentialRepository.findByCandidateId(id));
+        return ResponseEntity.ok(credentialRepository.findByCandidateIdOrderByIdDesc(id));
     }
     
     @GetMapping("/{candidateId}/credentials/{skillId}")
@@ -176,4 +263,3 @@ public class CandidateController {
         }
     }
 }
-

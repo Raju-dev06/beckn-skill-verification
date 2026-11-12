@@ -17,8 +17,8 @@ public class EmployerService {
     private final UserRepository userRepository;
     private final CandidateService candidateService;
 
-    public List<CandidateProfileDto> searchCandidatesByName(String name) {
-        List<User> users = userRepository.findByNameContainingIgnoreCaseAndRole(name, "CANDIDATE");
+    public List<CandidateProfileDto> searchCandidatesByName(String query) {
+        List<User> users = userRepository.searchCandidatesByNameOrEmail(query, "CANDIDATE");
         return users.stream()
                 .map(u -> candidateService.getCandidateProfile(u.getId()))
                 .collect(Collectors.toList());

@@ -4,7 +4,7 @@ import { candidateService } from '../services/api';
 import { 
   CheckCircle, AlertTriangle, Clock, GraduationCap, ChevronRight, 
   PlusCircle, Sparkles, ShieldCheck, Share2, Network, ExternalLink, 
-  Layers, CheckCircle2, Shield
+  Layers, CheckCircle2, Shield, Award
 } from 'lucide-react';
 
 export default function CandidateDashboard({ user }) {
@@ -174,6 +174,66 @@ export default function CandidateDashboard({ user }) {
         </div>
 
       </div>
+
+      {/* Uploaded Certificates Section */}
+      {profile.certificates && profile.certificates.length > 0 && (
+        <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 space-y-5 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                <Award size={22} />
+              </div>
+              <div>
+                <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
+                  Uploaded Certificates & Network Badges
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Visible to verified ONEST employers during candidate inspection.
+                </p>
+              </div>
+            </div>
+            <span className="text-xs font-bold bg-blue-50 text-blue-700 px-3 py-1 rounded-full border border-blue-200 self-start sm:self-auto">
+              {profile.certificates.length} {profile.certificates.length === 1 ? 'Credential' : 'Credentials'} Verified
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {profile.certificates.map((cert) => (
+              <div 
+                key={cert.id || cert.credentialId}
+                className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-blue-300 hover:shadow-xs transition-all space-y-3"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      {cert.issuer}
+                    </span>
+                    <h4 className="text-sm font-bold text-slate-900">{cert.certificateName}</h4>
+                  </div>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${
+                    cert.valid || cert.status === 'VERIFIED'
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                      : 'bg-amber-50 text-amber-800 border-amber-300'
+                  }`}>
+                    {cert.valid || cert.status === 'VERIFIED' ? 'VALID / AUTHENTIC' : 'PENDING'}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200/60 font-mono text-slate-600">
+                  <span className="truncate max-w-[200px]" title={cert.credentialId}>
+                    ID: {cert.credentialId}
+                  </span>
+                  {cert.confidenceScore > 0 && (
+                    <span className="font-bold text-blue-600">
+                      Score: {cert.confidenceScore}%
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Skills Section Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">

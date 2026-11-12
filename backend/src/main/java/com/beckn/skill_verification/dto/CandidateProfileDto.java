@@ -15,4 +15,5 @@ public class CandidateProfileDto {
     private Integer overallVerificationScore;
     
     private List<CandidateSkillDto> skills;
+    private List<CandidateCertificateDto> certificates;
 }

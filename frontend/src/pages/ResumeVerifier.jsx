@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { candidateService } from '../services/api';
+import { candidateService, verificationService } from '../services/api';
 import { 
   UploadCloud, FileText, CheckCircle, XCircle, AlertTriangle, 
   ExternalLink, ShieldCheck, Sparkles, Filter, RefreshCw, 
@@ -30,7 +30,16 @@ export default function ResumeVerifier({ user }) {
   // Common Sync State
   const [syncingBadgeId, setSyncingBadgeId] = useState(null);
   const [syncedBadges, setSyncedBadges] = useState({});
+  const [userSkills, setUserSkills] = useState([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user && user.role === 'CANDIDATE') {
+      candidateService.getProfile(user.id)
+        .then(res => setUserSkills(res.data?.skills || []))
+        .catch(err => console.error('Failed to load candidate skills in verifier:', err));
+    }
+  }, [user]);
 
   // QR Certificate File Handler
   const handleCertFileChange = (e) => {
@@ -111,7 +120,7 @@ export default function ResumeVerifier({ user }) {
     }
   };
 
-  const handleSyncToProfile = async (title, credentialId, issuer, urlKey) => {
+  const handleSyncToProfile = async (title, credentialId, issuer, urlKey, fileToUpload) => {
     if (!user || user.role !== 'CANDIDATE') {
       alert('Please log in as a candidate to sync certificates to your profile.');
       return;
@@ -120,13 +129,46 @@ export default function ResumeVerifier({ user }) {
     const key = urlKey || credentialId;
     setSyncingBadgeId(key);
     try {
+      // Find matching skill based on title or default to candidate's skills
+      let targetSkillId = 1;
+      const lowerTitle = (title || '').toLowerCase();
+      const matchedSkill = userSkills.find(s => 
+        lowerTitle.includes(s.name.toLowerCase()) || 
+        (lowerTitle.includes('cloud') && s.name.toLowerCase().includes('cloud')) ||
+        (lowerTitle.includes('aws') && s.name.toLowerCase().includes('aws')) ||
+        (lowerTitle.includes('java') && s.name.toLowerCase().includes('java')) ||
+        (lowerTitle.includes('spring') && s.name.toLowerCase().includes('spring')) ||
+        (lowerTitle.includes('sql') && s.name.toLowerCase().includes('sql')) ||
+        (lowerTitle.includes('react') && s.name.toLowerCase().includes('react'))
+      );
+
+      if (matchedSkill) {
+        targetSkillId = matchedSkill.skillId;
+      } else if (userSkills.length > 0) {
+        targetSkillId = userSkills[0].skillId;
+      }
+
       const formData = new FormData();
-      formData.append('skillId', '1');
+      formData.append('skillId', targetSkillId.toString());
       formData.append('certificateName', title || 'Verified Certificate');
       formData.append('credentialId', credentialId || key);
       formData.append('issuer', issuer || 'Accredited Authority');
+      formData.append('status', 'VERIFIED');
+
+      const file = fileToUpload || certFile;
+      if (file) {
+        formData.append('file', file);
+      }
 
       await candidateService.addCredential(user.id, formData);
+
+      try {
+        await verificationService.giveConsent(user.id, targetSkillId);
+        await verificationService.verifySkill(user.id, targetSkillId);
+      } catch (err) {
+        console.log('Consent / verification note:', err.message);
+      }
+
       setSyncedBadges(prev => ({ ...prev, [key]: true }));
     } catch (err) {
       console.error(err);
@@ -402,7 +444,7 @@ export default function ResumeVerifier({ user }) {
                 {/* Sync to Profile Action */}
                 {(qrResult.isValid ?? qrResult.valid) && (
                   <button
-                    onClick={() => handleSyncToProfile(qrResult.certificateTitle, qrResult.credentialId, qrResult.issuer, qrResult.qrPayload)}
+                    onClick={() => handleSyncToProfile(qrResult.certificateTitle, qrResult.credentialId, qrResult.issuer, qrResult.qrPayload, certFile)}
                     disabled={syncingBadgeId === (qrResult.qrPayload || qrResult.credentialId) || syncedBadges[qrResult.qrPayload || qrResult.credentialId]}
                     className={`w-full font-bold py-3 px-5 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 transition-all ${
                       syncedBadges[qrResult.qrPayload || qrResult.credentialId]

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { employerService } from '../services/api';
-import { Search, User, Briefcase, GraduationCap, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Search, User, Briefcase, GraduationCap, ArrowRight, ShieldCheck, Award, CheckCircle, Mail } from 'lucide-react';
 
 export default function EmployerDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -59,7 +59,7 @@ export default function EmployerDashboard() {
           </h1>
 
           <p className="text-sm sm:text-lg text-slate-300 font-normal mb-8 max-w-2xl mx-auto leading-relaxed">
-            Query authenticated credentials across the decentralized ONEST network. Instantly inspect cryptographically verified skills and issuer digital signatures.
+            Query authenticated credentials across the decentralized ONEST network. Instantly inspect cryptographically verified skills, uploaded certificates, and issuer digital signatures.
           </p>
           
           {/* Search Box */}
@@ -74,7 +74,7 @@ export default function EmployerDashboard() {
                 className="w-full pl-12 pr-32 py-4 sm:py-4.5 bg-slate-800/90 text-white border border-slate-700 rounded-2xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 text-sm sm:text-base outline-none transition-all placeholder-slate-400 shadow-2xl" 
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                placeholder="Search candidates by name (e.g. Alex, Sarah)..."
+                placeholder="Search candidates by name or email (e.g. Rahul, alex@test.com)..."
               />
 
               <div className="absolute right-2 flex items-center">
@@ -99,7 +99,7 @@ export default function EmployerDashboard() {
           {/* Quick Filter Suggestions */}
           <div className="flex flex-wrap items-center justify-center gap-2 mt-4 text-xs text-slate-400">
             <span>Quick search:</span>
-            {['Alex', 'Sarah', 'John'].map(name => (
+            {['Rahul', 'Alex', 'Sarah'].map(name => (
               <button
                 key={name}
                 type="button"
@@ -123,7 +123,7 @@ export default function EmployerDashboard() {
             </div>
             <h3 className="text-lg font-bold text-slate-900 mb-1">Begin Candidate Discovery</h3>
             <p className="text-sm text-slate-500 max-w-md mx-auto">
-              Enter any candidate's name above to look up their unified profile and inspect verified Beckn ONEST skill badges.
+              Enter any candidate's name above to look up their unified profile, verified credentials, and inspect verified Beckn ONEST skill badges.
             </p>
           </div>
         ) : (
@@ -147,7 +147,7 @@ export default function EmployerDashboard() {
                 </div>
                 <h4 className="text-base font-bold text-slate-800 mb-1">No candidate records found</h4>
                 <p className="text-sm text-slate-500">
-                  No verified candidates matched "{searchTerm}". Check the spelling or try searching another name.
+                  No verified candidates matched "{searchTerm}". Check the spelling or try searching another name like "Rahul", "Alex", or "Sarah".
                 </p>
               </div>
             ) : (
@@ -158,29 +158,73 @@ export default function EmployerDashboard() {
                     className="bg-white p-5 sm:p-6 rounded-2xl shadow-xs hover:shadow-md transition-all duration-200 border border-slate-200/90 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 group card-hover"
                     style={{ animationDelay: `${idx * 0.05}s` }}
                   >
-                    <div className="flex items-center gap-4">
+                    {/* Clickable Candidate Identity Area */}
+                    <div 
+                      onClick={() => navigate(`/employer/candidate/${candidate.candidateId}`)}
+                      className="flex items-center gap-4 cursor-pointer flex-1"
+                      title={`Click to inspect ${candidate.name}'s verified certificates & profile`}
+                    >
                       <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-tr from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center text-2xl font-black text-slate-600 group-hover:from-blue-600 group-hover:to-indigo-600 group-hover:text-white transition-all shadow-inner border border-slate-200 shrink-0">
                         {candidate.name.charAt(0).toUpperCase()}
                       </div>
                       
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                      <div className="space-y-1.5">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors flex items-center gap-1.5">
                             {candidate.name}
+                            <ArrowRight size={15} className="opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all text-blue-600" />
                           </h3>
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                             <ShieldCheck size={11} /> Verified
                           </span>
+                          {candidate.certificates && candidate.certificates.length > 0 && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                              <Award size={11} /> {candidate.certificates.length} {candidate.certificates.length === 1 ? 'Certificate' : 'Certificates'}
+                            </span>
+                          )}
                         </div>
-                        <p className="text-xs sm:text-sm text-slate-500 flex items-center gap-1.5 font-medium">
+
+                        <p className="text-xs sm:text-sm text-slate-500 flex flex-wrap items-center gap-1.5 font-medium">
+                          {candidate.email && (
+                            <>
+                              <span className="flex items-center gap-1 text-slate-600 font-semibold bg-slate-100 px-2 py-0.5 rounded-md">
+                                <Mail size={12} className="text-blue-500" />
+                                {candidate.email}
+                              </span>
+                              <span className="text-slate-400">•</span>
+                            </>
+                          )}
                           <GraduationCap size={15} className="text-slate-400 shrink-0" />
                           <span>{candidate.education}</span>
                           <span className="text-slate-400">•</span>
-                          <span>Graduation {candidate.graduationYear}</span>
+                          <span>{candidate.college || 'Accredited Institution'}</span>
+                          <span className="text-slate-400">•</span>
+                          <span>Class of {candidate.graduationYear}</span>
                         </p>
+
+                        {/* Certificate preview pills */}
+                        {candidate.certificates && candidate.certificates.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                            {candidate.certificates.slice(0, 3).map((cert, cidx) => (
+                              <span 
+                                key={cert.id || cidx} 
+                                className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 px-2 py-0.5 rounded-md border border-slate-200 transition-colors"
+                              >
+                                <CheckCircle size={11} className="text-emerald-500" />
+                                <span className="truncate max-w-[200px]">{cert.certificateName}</span>
+                              </span>
+                            ))}
+                            {candidate.certificates.length > 3 && (
+                              <span className="text-[10px] text-slate-400 font-bold">
+                                +{candidate.certificates.length - 3} more
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
 
+                    {/* Trust Score & CTA Button */}
                     <div className="flex items-center justify-between sm:justify-end gap-5 w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100">
                       <div className="bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-200 text-center min-w-[120px]">
                         <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">Trust Score</p>

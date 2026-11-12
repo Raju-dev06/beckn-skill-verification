@@ -1,0 +1,32 @@
+services:
+  # Spring Boot Backend
+  - type: web
+    name: beckn-backend
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    plan: free
+    region: oregon
+    envVars:
+      - key: SERVER_PORT
+        value: 8081
+      - key: INTEGRATION_MODE
+        value: REAL
+      - key: ONEST_ENABLED
+        value: "true"
+      - key: BECKN_DOMAIN
+        value: onest:work-opportunities
+
+  # React Frontend Static Site
+  - type: web
+    name: beckn-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    plan: free
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
