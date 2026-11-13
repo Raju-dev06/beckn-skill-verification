@@ -31,7 +31,7 @@ COPY --from=builder /build/target/*.jar app.jar
 ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+ExitOnOutOfMemoryError"
 ENV SERVER_PORT=8081
 
-EXPOSE 8081
+EXPOSE 8081 10000
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
 
